@@ -1,0 +1,5 @@
+require("sei.options")
+require("sei.theme")
+require("sei.keymaps")
+require("sei.plugins")
+require("sei.lsp")
