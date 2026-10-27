@@ -152,7 +152,7 @@ REPO_URL="https://github.com/TynK-M/sei.git"
 # when you want a reproducible setup tied to a specific release.
 #
 # The tag must exist on the remote repository.
-SEI_VERSION=""
+SEI_VERSION="v0.1.1"
 
 # Name of the configuration directory created under XDG_CONFIG_HOME.
 #
@@ -474,38 +474,68 @@ if [[ "$SEI_REF" == "main" ]]; then
     )"
 
 else
-
-    # First look for the exact normalized version tag.
+    # Query the remote repository for the requested version tag.
     #
-    # --refs asks Git to report matching references directly rather than
-    # including additional peeled-tag entries.
-    REMOTE_COMMIT="$(
-        git ls-remote --refs "$REPO_URL" "refs/tags/${SEI_REF}" |
-            awk 'NR == 1 { print $1 }'
+    # Git tags can be created in two ways:
+    #
+    # Lightweight tag:
+    #   Points directly to a commit.
+    #
+    # Annotated tag:
+    #   Points to a Git tag object, which in turn points to a commit.
+    #
+    # `git ls-remote` normally reports the tag object's hash for an annotated
+    # tag. However, the later validation compares this value with `git
+    # rev-parse
+    # HEAD`, which returns the actual commit hash.
+    #
+    # To make these values comparable, query both:
+    #
+    #   refs/tags/<tag>
+    #       The tag reference itself.
+    #
+    #   refs/tags/<tag>^{}
+    #       The peeled reference, which resolves an annotated tag to the
+    #       commit it ultimately points to.
+    #
+    # For lightweight tags, Git does not report a separate peeled reference.
+    # The fallback below handles that case by using the direct tag reference.
+    #
+    # This allows the setup script to validate both lightweight and annotated
+    # tags without incorrectly treating their different object hashes as
+    # evidence of a failed or inconsistent checkout.
+    REMOTE_REFS="$(
+        git ls-remote "$REPO_URL" \
+            "refs/tags/${SEI_REF}" \
+            "refs/tags/${SEI_REF}^{}"
     )"
 
-    # If the normalized tag does not exist, try the version without "v".
+    # Prefer the peeled reference when it exists.
     #
-    # For example:
-    #   First attempt: refs/tags/v1.0.0
-    #   Second attempt: refs/tags/1.0.0
+    # awk examines the second field of each result, which contains the Git
+    # reference name. The peeled reference ends in ^{}.
     #
-    # This is useful for repositories that use tags without a leading "v".
+    # The first field contains the corresponding object hash. For an annotated
+    # tag, this is the commit hash needed by the validation step below.
+    REMOTE_COMMIT="$(
+        printf '%s\n' "$REMOTE_REFS" |
+            awk '$2 ~ /\^\{\}$/ { print $1; exit }'
+    )"
+
+    # Handle lightweight tags.
+    #
+    # A lightweight tag has no peeled reference because it already points
+    # directly to its target commit. If no peeled hash was found, use the
+    # hash associated with the direct tag reference instead.
+    #
+    # Matching the complete reference name prevents accidentally selecting
+    # another tag with a similar name.
     if [[ -z "$REMOTE_COMMIT" ]]; then
-
-        # Remove the leading "v", if present.
-        ALT_REF="${SEI_REF#v}"
-
         REMOTE_COMMIT="$(
-            git ls-remote --refs "$REPO_URL" "refs/tags/${ALT_REF}" |
-                awk 'NR == 1 { print $1 }'
+            printf '%s\n' "$REMOTE_REFS" |
+                awk -v ref="refs/tags/${SEI_REF}" \
+                    '$2 == ref { print $1; exit }'
         )"
-
-        # If the alternative tag exists, remember its actual name so that
-        # git clone checks out the correct reference.
-        if [[ -n "$REMOTE_COMMIT" ]]; then
-            SEI_REF="$ALT_REF"
-        fi
     fi
 fi
 
@@ -878,6 +908,7 @@ TMP_DIR="$(mktemp -d)"
 git clone \
     --depth 1 \
     --branch "$SEI_REF" \
+    -c advice.detachedHead=false \
     "$REPO_URL" \
     "$TMP_DIR/sei"
 
