@@ -1,4 +1,4 @@
-# Sei 精
+# <p align="center">Sei 精</p>
 
 <p align="center">
   <img src="./logo/logo.jpg" width=400>
