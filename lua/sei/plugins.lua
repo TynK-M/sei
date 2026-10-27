@@ -66,4 +66,62 @@ require("lazy").setup({
 			})
 		end,
 	},
+
+	-- File explorer
+	{
+		"nvim-tree/nvim-tree.lua",
+		version = "*",
+		lazy = false,
+		dependencies = {
+			"nvim-tree/nvim-web-devicons",
+		},
+		keys = {
+			{ "<C-n>", "<cmd>NvimTreeToggle<CR>", desc = "Toggle file explorer" },
+		},
+		config = function()
+			vim.g.loaded_netrw = 1
+
+			require("nvim-tree").setup({
+				hijack_cursor = true,
+				sync_root_with_cwd = true,
+				respect_buf_cwd = true,
+
+				view = {
+					width = 32,
+					side = "left",
+				},
+
+				renderer = {
+					group_empty = true,
+					indent_markers = {
+						enable = true,
+					},
+					icons = {
+						show = {
+							git = true,
+							file = true,
+							folder = true,
+							folder_arrow = true,
+						},
+					},
+				},
+
+				filters = {
+					dotfiles = false,
+				},
+
+				git = {
+					enable = true,
+					ignore = false,
+				},
+
+				actions = {
+					open_file = {
+						quit_on_open = false,
+						resize_window = true,
+					},
+				},
+			})
+		end,
+	},
 })

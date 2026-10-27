@@ -138,3 +138,13 @@ local groups = {
 for group, opts in pairs(groups) do
 	vim.api.nvim_set_hl(0, group, opts)
 end
+
+-- File explorer
+vim.api.nvim_set_hl(0, "NvimTreeNormal", { fg = "#D4C9E8", bg = "#191621" })
+vim.api.nvim_set_hl(0, "NvimTreeNormalNC", { fg = "#D4C9E8", bg = "#191621" })
+vim.api.nvim_set_hl(0, "NvimTreeEndOfBuffer", { fg = "#191621", bg = "#191621" })
+vim.api.nvim_set_hl(0, "NvimTreeWinSeparator", { fg = "#393344", bg = "#191621" })
+vim.api.nvim_set_hl(0, "NvimTreeFolderName", { fg = "#B9A0E8" })
+vim.api.nvim_set_hl(0, "NvimTreeOpenedFolderName", { fg = "#C4B4E8", bold = true })
+vim.api.nvim_set_hl(0, "NvimTreeGitNew", { fg = "#A8BCA0" })
+vim.api.nvim_set_hl(0, "NvimTreeGitDirty", { fg = "#D7B887" })
